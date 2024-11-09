@@ -3,11 +3,13 @@ import { CircleFadingPlusIcon, PenBox, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Loader from "@/components/Loader";
 
 export default function Products() {
     const [products, setProducts] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
     const productsPerPage = 10;
     const router = useRouter();
 
@@ -46,6 +48,14 @@ export default function Products() {
             router.push(`/products?page=${currentPage - 1}`);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader />
+            </div>
+        );
+    }
 
     return (
         <div>
