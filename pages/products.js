@@ -19,14 +19,20 @@ export default function Products() {
     }, [router.query.page]);
 
     useEffect(() => {
-        axios.get("/api/products")
-            .then(response => {
+        const fetchProducts = async () => {
+            setIsLoading(true);
+            try {
+                const response = await axios.get("/api/products");
                 setProducts(response.data);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error("Error fetching products:", error);
-            });
-    }, []);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchProducts();
+    }, []);    
 
     const filteredProducts = products.filter(product =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase())
