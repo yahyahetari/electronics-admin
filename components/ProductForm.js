@@ -449,7 +449,7 @@ export default function ProductForm({
                 <div className="mt-2 flex flex-wrap gap-2">
                     <ReactSortable list={images} className="flex flex-wrap" setList={imagesOrdering}>
                         {!!images?.length && images.map(Link => (
-                            <div key={Link} className="relative w-40 h-56 p-2 rounded-md">
+                            <div key={Link} className="relative w-44 h-56 p-2 rounded-md">
                                 <img src={Link} alt="product image" className="w-full h-full object-cover border rounded-lg cursor-move" />
                                 <button
                                     onClick={() => removeImage(Link)}
