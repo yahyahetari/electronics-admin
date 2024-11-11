@@ -24,10 +24,11 @@ export default function ProductForm({
     const [availableTags, setAvailableTags] = useState([]);
     const [selectedTags, setSelectedTags] = useState(existingTags || []);
     const [variants, setVariants] = useState(existingVariants || []);
-    const [goToProducts, setGoToProducts] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [editingIndex, setEditingIndex] = useState(null);
     const router = useRouter();
+    const { page, ...rest } = router.query;
+
 
     useEffect(() => {
         async function fetchCategories() {
@@ -282,8 +283,6 @@ export default function ProductForm({
         );
     }
 
-
-
     async function saveProducts(ev) {
         ev.preventDefault();
         const data = {
@@ -298,19 +297,17 @@ export default function ProductForm({
         try {
             if (_id) {
                 await axios.put('/api/products', { ...data, _id });
+                // نستخدم router.back() للعودة للصفحة السابقة مباشرة
+                router.back();
             } else {
                 const response = await axios.post('/api/products', data);
-                console.log('Server response:', response.data);
+                router.push('/products');
             }
-            setGoToProducts(true);
         } catch (error) {
             console.error('Error saving product:', error.response?.data || error.message);
         }
     }
 
-    if (goToProducts) {
-        router.push('/products');
-    }
 
     async function uploadImages(ev) {
         const files = ev.target?.files;
