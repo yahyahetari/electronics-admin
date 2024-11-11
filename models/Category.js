@@ -13,10 +13,12 @@ const CategorySchema = new mongoose.Schema({
 
 function createSlug(name) {
     const slug = name
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\u0600-\u06FF-]/g, ''); // نطاق الحروف العربية
-
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
     return slug || name; // إرجاع الاسم الأصلي إذا كان الslug فارغاً
 }
 

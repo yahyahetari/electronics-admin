@@ -19,12 +19,17 @@ const ProductSchema = new Schema({
   });
   
 
-function createSlug(title) {
-    return title
+  function createSlug(title) {
+    let slug = title
         .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^\u0600-\u06FF-]/g, '');
+        .toLowerCase()
+        .replace(/[\s_]+/g, '-')
+        .replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return slug;
 }
+
 
 ProductSchema.pre('save', async function(next) {
     if (this.title && (!this.slug || this.isModified('title'))) {
