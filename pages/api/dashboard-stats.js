@@ -20,6 +20,9 @@ export default async function handler(req, res) {
             Product.find({}).lean()
         ]);
 
+        console.log("Orders:", orders);
+        console.log("Products:", products);
+
         // إنشاء Map للمنتجات للوصول السريع
         const productsMap = new Map(products.map(p => [p._id.toString(), p]));
 
@@ -28,13 +31,18 @@ export default async function handler(req, res) {
             for (const item of order.items) {
                 const product = productsMap.get(item.productId.toString());
                 if (product) {
-                    const variant = product.variants.find(v => 
-                        Object.entries(item.properties).every(([key, value]) => 
-                            v.properties[key]?.includes(value)
-                        )
-                    );
-                    if (variant) {
-                        profit += (item.price - variant.cost) * item.quantity;
+                    // تحقق من وجود item.properties
+                    if (item.properties && typeof item.properties === 'object') {
+                        const variant = product.variants.find(v => 
+                            Object.entries(item.properties).every(([key, value]) => 
+                                v.properties[key]?.includes(value)
+                            )
+                        );
+                        if (variant) {
+                            profit += (item.price - variant.cost) * item.quantity;
+                        }
+                    } else {
+                        console.warn("Item properties are missing or invalid:", item);
                     }
                 }
             }
@@ -110,6 +118,8 @@ export default async function handler(req, res) {
                 Object.entries(monthlyData).map(([key, value]) => [key, value.profit])
             )
         };
+
+        console.log("Result:", result);
 
         res.json(result);
     } catch (error) {
