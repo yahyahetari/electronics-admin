@@ -1,4 +1,4 @@
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import Nav from "./Nav";
 import TopBar from "./TopBar";
 import { useMediaQuery } from "react-responsive";
@@ -9,7 +9,7 @@ import { useRouter } from "next/router";
 import VerificationForm from "./VerificationForm";
 
 export default function Layout({ children }) {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const loading = status === "loading";
   const mainRef = useRef(null);
@@ -35,12 +35,18 @@ export default function Layout({ children }) {
     }
   }, [session, router]);
   
-  
-
   const handleTabClick = (e, tab) => {
     e.preventDefault();
     setActiveTab(tab);
     setError('');
+    // إعادة تعيين البيانات عند التبديل
+    setFormData({
+      signup_full_name: '',
+      signup_email: '',
+      signup_password: '',
+      login_email: '',
+      login_password: ''
+    });
   };
 
   const handleInputChange = (e) => {
@@ -54,73 +60,122 @@ export default function Layout({ children }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
     try {
       if (activeTab === 'signup') {
-        if (formData.signup_full_name.length < 10) {
+        // التحقق من صحة البيانات
+        if (!formData.signup_full_name.trim()) {
+          setError('الاسم الكامل مطلوب');
+          return;
+        }
+        if (formData.signup_full_name.trim().length < 10) {
           setError('الاسم الكامل يجب أن يكون 10 أحرف على الأقل');
           return;
         }
+        if (!formData.signup_email.trim()) {
+          setError('البريد الإلكتروني مطلوب');
+          return;
+        }
+        if (!formData.signup_password.trim()) {
+          setError('كلمة المرور مطلوبة');
+          return;
+        }
+        
         const response = await axios.post('/api/auth/signup', {
-          name: formData.signup_full_name,
-          email: formData.signup_email,
+          name: formData.signup_full_name.trim(),
+          email: formData.signup_email.trim(),
           password: formData.signup_password
         });
+        
         if (response.data.success) {
-          await handleSignIn(formData.signup_email, formData.signup_password);
+          await handleSignIn(formData.signup_email.trim(), formData.signup_password);
         }
       } else {
-        await handleSignIn(formData.login_email, formData.login_password);
+        // التحقق من صحة بيانات تسجيل الدخول
+        if (!formData.login_email.trim()) {
+          setError('البريد الإلكتروني مطلوب');
+          return;
+        }
+        if (!formData.login_password.trim()) {
+          setError('كلمة المرور مطلوبة');
+          return;
+        }
+        
+        await handleSignIn(formData.login_email.trim(), formData.login_password);
       }
     } catch (error) {
+      console.error('Submit error:', error);
       setError(error.response?.data?.error || 'حدث خطأ');
     }
   };
 
   const handleSignIn = async (email, password) => {
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-    if (result.error) {
-      setError(result.error);
-    } else {
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+      
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      
+      // إنشاء رمز التحقق
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setVerificationCode(code);
       
       try {
         const response = await axios.post('/api/send-verification', { email, code });
-        setShowVerification(true);
-      } catch (error) {
-        console.error('فشل في إرسال رمز التحقق:', error.response?.data || error.message);
-        setError('فشل في إرسال رمز التحقق: ' + (error.response?.data?.details || error.message));
+        if (response.data) {
+          setShowVerification(true);
+        }
+      } catch (emailError) {
+        console.error('فشل في إرسال رمز التحقق:', emailError);
+        setError('فشل في إرسال رمز التحقق: ' + (emailError.response?.data?.details || emailError.message));
       }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setError('حدث خطأ في تسجيل الدخول');
     }
   };
 
   const handleVerify = async (enteredCode) => {
     if (enteredCode === verificationCode) {
       try {
-        await axios.post('/api/verify-user', { email: formData.login_email || formData.signup_email });
-        setIsVerified(true);
-        // تحديث الجلسة
-        const updatedSession = { ...session, user: { ...session.user, isVerified: true } };
-        await signIn("credentials", {
-          redirect: false,
-          email: formData.login_email || formData.signup_email,
-          password: formData.login_password || formData.signup_password,
-        });
-        setTimeout(() => {
-          router.push('/');
-        }, 100);
+        const email = formData.login_email || formData.signup_email;
+        
+        // تحديث حالة التحقق في قاعدة البيانات
+        const response = await axios.post('/api/verify-user', { email });
+        
+        if (response.data) {
+          setIsVerified(true);
+          setShowVerification(false);
+          
+          // إعادة تسجيل الدخول لتحديث الجلسة
+          await signIn("credentials", {
+            redirect: false,
+            email: email,
+            password: formData.login_password || formData.signup_password,
+          });
+          
+          // تحديث الجلسة
+          await update();
+          
+          // انتقال إلى الصفحة الرئيسية
+          setTimeout(() => {
+            router.push('/');
+          }, 100);
+        }
       } catch (error) {
+        console.error('Verification error:', error);
         setError('فشل في التحقق من المستخدم');
       }
     } else {
       setError('رمز التحقق غير صحيح');
     }
   };
-  
 
   const scrollToTop = () => {
     if (mainRef.current) {
@@ -143,11 +198,18 @@ export default function Layout({ children }) {
 
   if (!session || (session && !isVerified)) {
     return (
-      <div className="flex items-center justify-center min-h-scree bg-bg-img bg-cover h-screen bg-glass overflow-y-hidden">
+      <div className="flex items-center justify-center min-h-screen bg-bg-img bg-cover h-screen bg-glass overflow-y-hidden">
         <div className="w-full max-w-[600px] mx-auto my-5">
-          <div className=" bg-b-glass p-10 rounded-2xl shadow-[0_4px_10px_4px_rgba(19,35,47,3)]">
+          <div className="bg-b-glass p-10 rounded-2xl shadow-[0_4px_10px_4px_rgba(19,35,47,3)]">
             {showVerification ? (
-              <VerificationForm onVerify={handleVerify} correctCode={verificationCode} />
+              <VerificationForm 
+                onVerify={handleVerify} 
+                correctCode={verificationCode}
+                onBack={() => {
+                  setShowVerification(false);
+                  setError('');
+                }}
+              />
             ) : (
               <div className="form">
                 <ul className="flex justify-between list-none p-0 mb-5">
@@ -179,83 +241,87 @@ export default function Layout({ children }) {
 
                 {error && <p className="text-red-500 text-xl text-center mb-4">{error}</p>}
 
-              <div className="w-full">
-                <div id="signup" style={{ display: activeTab === 'signup' ? 'block' : 'none' }}>
-                  <h1 className="text-center text-white font-light text-3xl mb-2.5">مرحباً</h1>
-                  <form onSubmit={handleSubmit} autoComplete="off">
-                    <div className="mb-4">
-                      <div className="w-full relative">
+                <div className="w-full">
+                  <div id="signup" style={{ display: activeTab === 'signup' ? 'block' : 'none' }}>
+                    <h1 className="text-center text-white font-light text-3xl mb-2.5">مرحباً</h1>
+                    <form onSubmit={handleSubmit} autoComplete="off">
+                      <div className="mb-4">
+                        <div className="w-full relative">
+                          <input
+                            type="text"
+                            required
+                            name="signup_full_name"
+                            value={formData.signup_full_name}
+                            onChange={handleInputChange}
+                            className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                            placeholder="الاسم الكامل (10 أحرف على الأقل)"
+                            autoComplete="off"
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-2 relative">
                         <input
-                          type="text"
+                          type="email"
                           required
-                          name="signup_full_name"
-                          value={formData.signup_full_name}
+                          name="signup_email"
+                          value={formData.signup_email}
                           onChange={handleInputChange}
                           className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
-                          placeholder="الاسم الكامل"
-                          autoComplete="new-full-name"
+                          placeholder="البريد الإلكتروني"
+                          autoComplete="off"
                         />
                       </div>
-                    </div>
-                    <div className="mb-2 relative">
-                      <input
-                        type="email"
-                        required
-                        name="signup_email"
-                        value={formData.signup_email}
-                        onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
-                        placeholder="البريد الإلكتروني"
-                        autoComplete="new-email"
-                      />
-                    </div>
-                    <div className="mb-8 relative">
-                      <input
-                        type="password"
-                        required
-                        name="signup_password"
-                        value={formData.signup_password}
-                        onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
-                        placeholder="كلمة المرور"
-                        autoComplete="new-password"
-                      />
-                    </div>
-                    <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">تسجيل</button>
-                  </form>
-                </div>
-                <div id="login" style={{ display: activeTab === 'login' ? 'block' : 'none' }}>
-                  <h1 className="text-center text-white font-light text-3xl mb-2.5">مرحباً بعودتك</h1>
-                  <form onSubmit={handleSubmit} autoComplete="off">
-                    <div className="mb-10 relative">
-                      <input
-                        type="email"
-                        required
-                        name="login_email"
-                        value={formData.login_email}
-                        onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
-                        placeholder="البريد الإلكتروني"
-                        autoComplete="new-email"
-                      />
-                    </div>
-                    <div className="mb-10 relative">
-                      <input
-                        type="password"
-                        required
-                        name="login_password"
-                        value={formData.login_password}
-                        onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
-                        placeholder="كلمة المرور"
-                        autoComplete="new-password"
-                      />
-                    </div>
-                    <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">تسجيل الدخول</button>
-                  </form>
+                      <div className="mb-8 relative">
+                        <input
+                          type="password"
+                          required
+                          name="signup_password"
+                          value={formData.signup_password}
+                          onChange={handleInputChange}
+                          className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                          placeholder="كلمة المرور"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">
+                        تسجيل
+                      </button>
+                    </form>
+                  </div>
+                  <div id="login" style={{ display: activeTab === 'login' ? 'block' : 'none' }}>
+                    <h1 className="text-center text-white font-light text-3xl mb-2.5">مرحباً بعودتك</h1>
+                    <form onSubmit={handleSubmit} autoComplete="off">
+                      <div className="mb-10 relative">
+                        <input
+                          type="email"
+                          required
+                          name="login_email"
+                          value={formData.login_email}
+                          onChange={handleInputChange}
+                          className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                          placeholder="البريد الإلكتروني"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <div className="mb-10 relative">
+                        <input
+                          type="password"
+                          required
+                          name="login_password"
+                          value={formData.login_password}
+                          onChange={handleInputChange}
+                          className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                          placeholder="كلمة المرور"
+                          autoComplete="off"
+                        />
+                      </div>
+                      <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">
+                        تسجيل الدخول
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
           </div>
         </div>
