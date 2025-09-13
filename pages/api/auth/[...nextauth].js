@@ -4,9 +4,9 @@ import { MongoDBAdapter } from '@auth/mongodb-adapter'
 import clientPromise from "@/lib/mongodb"
 import { compare } from 'bcryptjs'
 
-const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com','marianmansor22@gmail.com'];
+const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com'];
 
- const authOptions = {
+export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
