@@ -4,7 +4,7 @@ import { MongoDBAdapter } from '@auth/mongodb-adapter'
 import clientPromise from "@/lib/mongodb"
 import { compare } from 'bcryptjs'
 
-const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com','marianmansor22@gmail.com'];
+const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com' ,'marianmansor22@gmail.com'];
 
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -62,7 +62,7 @@ export const authOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60 *9999999, // 30 days
+    maxAge: 30 * 24 * 60 * 60 *999999, // 30 days
   },
   debug: process.env.NODE_ENV === 'development',
 };

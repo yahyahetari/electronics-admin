@@ -1,7 +1,7 @@
 import { hash } from 'bcryptjs'
 import clientPromise from "@/lib/mongodb"
 
-const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com','marianmansor22@gmail.com'];
+const adminEmails = ['yahyahetari2002@gmail.com', 'yahyaalhetari5@gmail.com', 'Hazembohloly@gmail.com' ,'marianmansor22@gmail.com'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
