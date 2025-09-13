@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const db = client.db();
 
     // حذف المستخدم من قاعدة البيانات
-    await db.collection("users").deleteOne({ email: session.user.email });
+    await db.collection("adminusers").deleteOne({ email: session.user.email });
 
     res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
