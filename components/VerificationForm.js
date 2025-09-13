@@ -63,11 +63,11 @@ const VerificationForm = ({ onVerify, correctCode }) => {
             ref={(el) => (inputRefs.current[index] = el)}
             id={`code-${index}`}
             type="text"
-            maxLength="6"
+            maxLength="1"
             value={digit}
             onChange={(e) => handleChange(index, e.target.value)}
             onPaste={handlePaste}
-            className="w-36 h-12 mx-6 text-2xl text-center border-2 border-[#01939c] rounded-md bg-transparent text-white"
+            className="w-12 h-12 mx-1 text-2xl text-center border-2 border-[#01939c] rounded-md bg-transparent text-white"
           />
         ))}
       </div>
