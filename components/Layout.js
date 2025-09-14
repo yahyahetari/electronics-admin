@@ -1,4 +1,4 @@
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import Nav from "./Nav";
 import TopBar from "./TopBar";
 import { useMediaQuery } from "react-responsive";
@@ -26,6 +26,10 @@ export default function Layout({ children }) {
   const [showVerification, setShowVerification] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  // States لإظهار/إخفاء كلمة المرور
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
   useEffect(() => {
     if (session?.user) {
       if (router.pathname === '/auth/signin') {
@@ -34,8 +38,15 @@ export default function Layout({ children }) {
       setIsVerified(!!session.user.isVerified);
     }
   }, [session, router]);
-  
-  
+
+  // دالة إظهار/إخفاء كلمة المرور
+  const togglePasswordVisibility = (field) => {
+    if (field === 'signup') {
+      setShowSignupPassword(!showSignupPassword);
+    } else if (field === 'login') {
+      setShowLoginPassword(!showLoginPassword);
+    }
+  };
 
   const handleTabClick = (e, tab) => {
     e.preventDefault();
@@ -211,15 +222,34 @@ export default function Layout({ children }) {
                     </div>
                     <div className="mb-8 relative">
                       <input
-                        type="password"
+                        type={showSignupPassword ? "text" : "password"}
                         required
                         name="signup_password"
                         value={formData.signup_password}
                         onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                        className="text-lg w-full py-2.5 px-4 pr-12 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
                         placeholder="كلمة المرور"
                         autoComplete="new-password"
                       />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('signup')}
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#01939c] hover:text-[#179b77] transition-colors duration-200"
+                      >
+                        {showSignupPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                            <line x1="2" y1="2" x2="22" y2="22"/>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
                     </div>
                     <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">تسجيل</button>
                   </form>
@@ -241,15 +271,34 @@ export default function Layout({ children }) {
                     </div>
                     <div className="mb-10 relative">
                       <input
-                        type="password"
+                        type={showLoginPassword ? "text" : "password"}
                         required
                         name="login_password"
                         value={formData.login_password}
                         onChange={handleInputChange}
-                        className="text-lg w-full py-2.5 px-4 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
+                        className="text-lg w-full py-2.5 px-4 pr-12 bg-transparent border border-[#01939c] text-white rounded-md transition-all duration-250 ease-in-out focus:outline-none focus:border-[#179b77]"
                         placeholder="كلمة المرور"
                         autoComplete="new-password"
                       />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('login')}
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#01939c] hover:text-[#179b77] transition-colors duration-200"
+                      >
+                        {showLoginPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                            <line x1="2" y1="2" x2="22" y2="22"/>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
                     </div>
                     <button type="submit" className="w-full py-2.5 px-0 text-xl font-normal bg-[#01939c] text-white rounded-2xl cursor-pointer transition-all duration-500 ease-in-out hover:bg-[#179b77]">تسجيل الدخول</button>
                   </form>

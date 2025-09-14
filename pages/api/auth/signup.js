@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   const { name, email, password } = req.body
 
   if (!adminEmails.includes(email)) {
-    return res.status(403).json({ error: 'Email not authorized' })
+    return res.status(403).json({ error: 'الأيميل غير مصرح له بالدخول' })
   }
 
   try {
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
     const existingUser = await db.collection('adminusers').findOne({ email })
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' })
+      return res.status(400).json({ error: 'الأيميل موجود بالفعل قم بتسجيل الدخول' })
     }
 
     const hashedPassword = await hash(password, 12)
