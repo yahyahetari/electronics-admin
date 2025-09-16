@@ -93,9 +93,38 @@ export default function Layout({ children }) {
       email,
       password,
     });
+    
     if (result.error) {
       setError(result.error);
-    } else {
+      return;
+    }
+
+    try {
+      // فحص حالة التحقق من قاعدة البيانات
+      const verificationResponse = await axios.get(`/api/user-verification-status?email=${encodeURIComponent(email)}`);
+      
+      if (verificationResponse.data.isVerified) {
+        // المستخدم محقق بالفعل، توجيهه مباشرة للصفحة الرئيسية
+        setIsVerified(true);
+        router.push('/');
+        return;
+      }
+      
+      // المستخدم غير محقق، إرسال رمز التحقق
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setVerificationCode(code);
+      
+      try {
+        const response = await axios.post('/api/send-verification', { email, code });
+        setShowVerification(true);
+      } catch (error) {
+        console.error('فشل في إرسال رمز التحقق:', error.response?.data || error.message);
+        setError('فشل في إرسال رمز التحقق: ' + (error.response?.data?.details || error.message));
+      }
+      
+    } catch (verificationError) {
+      console.error('خطأ في فحص حالة التحقق:', verificationError);
+      // في حالة فشل فحص حالة التحقق، نتابع بإرسال الكود احتياطياً
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setVerificationCode(code);
       
@@ -132,7 +161,6 @@ export default function Layout({ children }) {
     }
   };
   
-
   const scrollToTop = () => {
     if (mainRef.current) {
       mainRef.current.scrollTo({
